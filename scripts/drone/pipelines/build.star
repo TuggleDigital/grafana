@@ -74,7 +74,6 @@ def build_e2e(trigger, ver_mode):
     build_steps = []
 
     create_packages = rgm_artifacts_step(
-        alpine = images["alpine"],
         artifacts = [
             "targz:grafana:linux/amd64",
             "targz:grafana:linux/arm64",
@@ -88,7 +87,6 @@ def build_e2e(trigger, ver_mode):
         ],
         file = "packages.txt",
         tag_format = "{{ .version_base }}-{{ .buildID }}-{{ .arch }}",
-        ubuntu = images["ubuntu"],
         ubuntu_tag_format = "{{ .version_base }}-{{ .buildID }}-ubuntu-{{ .arch }}",
     )
 
