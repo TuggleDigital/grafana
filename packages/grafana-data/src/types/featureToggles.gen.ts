@@ -1036,4 +1036,8 @@ export interface FeatureToggles {
   * @default false
   */
   preferLibraryPanelTitle?: boolean;
+  /**
+  * Applies OTel formatting templates to displayed logs
+  */
+  otelLogsFormatting?: boolean;
 }
