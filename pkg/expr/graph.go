@@ -7,6 +7,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/exp/maps"
 	"gonum.org/v1/gonum/graph/simple"
@@ -121,6 +122,35 @@ func (dp *DataPipeline) execute(c context.Context, now time.Time, s *Service) (m
 		vars[node.RefID()] = res
 	}
 	return vars, nil
+}
+
+// executeWithQueryFn executes only the datasource nodes using the provided query function.
+// It returns a map of refID to backend.DataResponse that can be used for further processing.
+func (dp *DataPipeline) executeWithQueryFn(
+	ctx context.Context,
+	queryFn func(ctx context.Context, dsNode *DSNode) (backend.DataResponse, error),
+) (map[string]backend.DataResponse, error) {
+	responses := make(map[string]backend.DataResponse)
+
+	// Execute all datasource nodes using the provided function
+	for _, node := range *dp {
+		if node.NodeType() != TypeDatasourceNode {
+			continue // Only process datasource nodes
+		}
+
+		dsNode := node.(*DSNode)
+
+		// Use the provided function to execute the query
+		resp, err := queryFn(ctx, dsNode)
+		if err != nil && resp.Error == nil {
+			resp.Error = err
+		}
+
+		// Store the raw response
+		responses[node.RefID()] = resp
+	}
+
+	return responses, nil
 }
 
 // GetDatasourceTypes returns an unique list of data source types used in the query. Machine learning node is encoded as `ml_<type>`, e.g. ml_outlier

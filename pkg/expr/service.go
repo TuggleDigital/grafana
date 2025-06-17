@@ -121,6 +121,32 @@ func (s *Service) ExecutePipeline(ctx context.Context, now time.Time, pipeline D
 	return res, nil
 }
 
+// ExecutePipelineWithClient executes the datasource nodes in a pipeline using an external query function.
+// It returns the raw datasource responses without any expression execution.
+func (s *Service) ExecutePipelineWithClient(
+	ctx context.Context,
+	now time.Time,
+	pipeline DataPipeline,
+	externalQueryFn func(ctx context.Context, dsNode *DSNode) (backend.DataResponse, error),
+) (*backend.QueryDataResponse, error) {
+	ctx, span := s.tracer.Start(ctx, "SSE.ExecutePipelineWithClient")
+	defer span.End()
+
+	// Execute datasource nodes using the custom function
+	dsResponses, err := pipeline.executeWithQueryFn(ctx, externalQueryFn)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a response with just the datasource results
+	res := backend.NewQueryDataResponse()
+	for refID, response := range dsResponses {
+		res.Responses[refID] = response
+	}
+
+	return res, nil
+}
+
 // Create a datasources.DataSource struct from NodeType. Returns error if kind is TypeDatasourceNode or unknown one.
 func DataSourceModelFromNodeType(kind NodeType) (*datasources.DataSource, error) {
 	switch kind {
